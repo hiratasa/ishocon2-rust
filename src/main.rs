@@ -10,6 +10,9 @@ async fn index() -> impl Responder {
 }
 
 async fn show_candidate(id: web::Path<(String,)>) -> impl Responder {
+    // TODO:
+    //  - Display vote count.
+    //  - Display voice of supportes.
     id.0.clone()
 }
 
