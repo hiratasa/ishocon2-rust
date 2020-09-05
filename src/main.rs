@@ -16,6 +16,10 @@ async fn show_candidate(id: web::Path<(String,)>) -> impl Responder {
     id.0.clone()
 }
 
+async fn show_political_party(name: web::Path<(String,)>) -> impl Responder {
+    name.0.clone()
+}
+
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     // TODO:
@@ -26,6 +30,10 @@ async fn main() -> std::io::Result<()> {
             .service(Files::new("/css", "./public/css"))
             .route("/", web::get().to(index))
             .route("/candidates/{id}", web::get().to(show_candidate))
+            .route(
+                "/political_parties/{name}",
+                web::get().to(show_political_party),
+            )
     })
     .bind("localhost:8080")?
     .run()
