@@ -29,6 +29,10 @@ async fn show_vote() -> impl Responder {
     "not implemented"
 }
 
+async fn do_vote() -> impl Responder {
+    "not implemented"
+}
+
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     // TODO:
@@ -44,6 +48,7 @@ async fn main() -> std::io::Result<()> {
                 web::get().to(show_political_party),
             )
             .route("/vote", web::get().to(show_vote))
+            .route("/vote", web::post().to(do_vote))
     })
     .bind("localhost:8080")?
     .run()
