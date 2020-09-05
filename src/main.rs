@@ -1,10 +1,15 @@
 mod candidate;
 mod helpers;
+mod user;
+mod vote;
+
+use std::env;
 
 use actix_files::Files;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use handlebars::Handlebars;
 use serde::Serialize;
+use sqlx::mysql::MySqlPoolOptions;
 
 use candidate::*;
 
@@ -148,11 +153,25 @@ async fn initialize() -> impl Responder {
     "Finish"
 }
 
+fn database_url() -> String {
+    let user = env::var("ISHOCON2_DB_USER").unwrap_or("ishocon".to_owned());
+    let pass = env::var("ISHOCON2_DB_PASSWORD").unwrap_or("ishocon".to_owned());
+    let dbname = env::var("ISHOCON2_DB_NAME").unwrap_or("ishocon2".to_owned());
+
+    format!("mysql://{}:{}@localhost/{}", user, pass, dbname)
+}
+
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     // TODO:
-    //  - prepare DB
     //  - prepare session
+
+    let pool = MySqlPoolOptions::new()
+        .max_connections(5)
+        .connect(&database_url())
+        .await
+        .unwrap();
+    let pool = web::Data::new(pool);
 
     let mut hb = Handlebars::new();
     hb.register_templates_directory(".hbs", "./templates/")
@@ -162,6 +181,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .app_data(pool.clone())
             .app_data(hb.clone())
             .service(Files::new("/css", "./public/css"))
             .route("/", web::get().to(index))
