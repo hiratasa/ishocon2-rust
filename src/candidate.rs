@@ -65,3 +65,21 @@ pub async fn get_candidates_by_political_party(pool: &MySqlPool, party: &str) ->
     .await
     .expect("failed to fetch candidate by party")
 }
+
+pub async fn get_election_result(pool: &MySqlPool) -> Vec<CandidateElectionResult> {
+    sqlx::query_as!(
+        CandidateElectionResult,
+        "
+            SELECT c.id, c.name, c.political_party, c.sex, IFNULL(v.count, 0) AS vote_count
+            FROM candidates AS c
+            LEFT OUTER JOIN (
+                SELECT candidate_id, COUNT(*) AS count
+                FROM votes
+                GROUP BY candidate_id) AS v
+            ON c.id = v.candidate_id
+            ORDER BY v.count DESC"
+    )
+    .fetch_all(pool)
+    .await
+    .expect("failed to fetch candidate by party")
+}
