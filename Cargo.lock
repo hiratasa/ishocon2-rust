@@ -881,7 +881,7 @@ dependencies = [
  "actix-rt",
  "actix-web",
  "handlebars",
- "serde_json",
+ "serde",
 ]
 
 [[package]]
