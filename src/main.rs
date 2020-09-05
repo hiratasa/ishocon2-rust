@@ -17,6 +17,10 @@ async fn show_candidate(id: web::Path<(String,)>) -> impl Responder {
 }
 
 async fn show_political_party(name: web::Path<(String,)>) -> impl Responder {
+    // TODO:
+    //  - Display vote count for the party.
+    //  - Display candidates of the party.
+    //  - Display voice of supporters of the candidates.
     name.0.clone()
 }
 
