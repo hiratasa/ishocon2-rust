@@ -30,6 +30,10 @@ async fn show_vote() -> impl Responder {
 }
 
 async fn do_vote() -> impl Responder {
+    // TODO:
+    //  - Fetch form values.
+    //  - Validate user info, user vote upper bound, candidate name and keyword.
+    //  - Execute vote (insert to DB)
     "not implemented"
 }
 
