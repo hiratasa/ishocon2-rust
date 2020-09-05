@@ -16,13 +16,13 @@ pub struct CandidateElectionResult {
     pub name: String,
     pub political_party: String,
     pub sex: String,
-    pub vote_count: i32,
+    pub vote_count: i64,
 }
 
 #[derive(Serialize)]
 pub struct PartyElectionResult {
     pub political_party: String,
-    pub vote_count: i32,
+    pub vote_count: i64,
 }
 
 pub async fn get_all_candidate(pool: &MySqlPool) -> Vec<Candidate> {
