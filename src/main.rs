@@ -24,6 +24,10 @@ async fn show_political_party(name: web::Path<(String,)>) -> impl Responder {
     name.0.clone()
 }
 
+async fn show_vote() -> impl Responder {
+    "not implemented"
+}
+
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     // TODO:
@@ -38,6 +42,7 @@ async fn main() -> std::io::Result<()> {
                 "/political_parties/{name}",
                 web::get().to(show_political_party),
             )
+            .route("/vote", web::get().to(show_vote))
     })
     .bind("localhost:8080")?
     .run()
