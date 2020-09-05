@@ -10,7 +10,7 @@ pub struct Candidate {
     pub sex: String,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 pub struct CandidateElectionResult {
     pub id: i32,
     pub name: String,
