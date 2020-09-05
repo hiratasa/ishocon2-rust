@@ -9,6 +9,10 @@ async fn index() -> impl Responder {
     HttpResponse::Ok().body("Hello!")
 }
 
+async fn show_candidate(id: web::Path<(String,)>) -> impl Responder {
+    id.0.clone()
+}
+
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     // TODO:
@@ -18,6 +22,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .service(Files::new("/css", "./public/css"))
             .route("/", web::get().to(index))
+            .route("/candidates/{id}", web::get().to(show_candidate))
     })
     .bind("localhost:8080")?
     .run()
