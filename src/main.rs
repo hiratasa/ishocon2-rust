@@ -37,6 +37,12 @@ async fn do_vote() -> impl Responder {
     "not implemented"
 }
 
+async fn initialize() -> impl Responder {
+    // TODO:
+    //  - Delete all votes.
+    "Finish"
+}
+
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     // TODO:
@@ -53,6 +59,7 @@ async fn main() -> std::io::Result<()> {
             )
             .route("/vote", web::get().to(show_vote))
             .route("/vote", web::post().to(do_vote))
+            .route("/initialize", web::get().to(initialize))
     })
     .bind("localhost:8080")?
     .run()
