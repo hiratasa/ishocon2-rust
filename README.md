@@ -4,15 +4,16 @@
 
 goの参照実装をベースに、できるだけ処理フローを変えないように実装。
 
-## ローカルでの開発時の注意点
+## ビルド時の注意点
 
 [sqlx](https://github.com/launchbadge/sqlx)のマクロを使用しているため、ビルド時にDBへ接続してスキーマのチェックが走る。
 
-この際、ローカルのDBに実環境同等のテーブルがなければコンパイルに失敗する（スキーマだけ一致していればよく、中身のデータは不要）。
+そのため、以下二点が必要:
 
-1. DBにテーブルを用意
-   * ISHOCON2のリポジトリの[init.sql](https://github.com/showwin/ISHOCON2/blob/master/admin/init.sql)もしくは[DBのdump](https://github.com/showwin/ISHOCON2/blob/master/admin/ishocon2.dump.tar.bz2)を使つ
-1. DBのURLを`.env`ファイルに以下のような形で記入する:
+* DBに実環境同等のテーブルがあること
+   * ローカルでの開発時は、ISHOCON2のリポジトリの[init.sql](https://github.com/showwin/ISHOCON2/blob/master/admin/init.sql)もしくは[DBのdump](https://github.com/showwin/ISHOCON2/blob/master/admin/ishocon2.dump.tar.bz2)を使つ
+* DBのURLが`.env`ファイルに以下のような形で記入されていること:
     ```
     DATABASE_URL=mysql://ishocon:ishocon@localhost/ishocon2
     ```
+    こちらは実環境でのビルド時にも必要なので注意
