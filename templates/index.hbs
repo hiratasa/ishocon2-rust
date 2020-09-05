@@ -7,11 +7,15 @@
 <div class="container">
   <h2>個人の部</h2>
   <div id="people" class="row">
-    {{#each candidates as |candidate|}}
+    {{#each candidates as |candidate index|}}
     <div class="col-md-3">
       <div class="panel panel-default">
         <div class="panel-heading">
-          <p>{{candidate.rank}}. <a href="/candidates/{{candidate.id}}">{{candidate.name}}</a></p>
+          {{#if (lt index 10)}}
+          <p>{{plus1 index}}. <a href="/candidates/{{candidate.id}}">{{candidate.name}}</a></p>
+          {{else}}
+          <p>最下位. <a href="/candidates/{{candidate.id}}">{{candidate.name}}</a></p>
+          {{/if}}
         </div>
         <div class="panel-body">
           <p>得票数: {{candidate.vote_count}}</p>
@@ -23,11 +27,11 @@
   </div>
   <h2>政党の部</h2>
   <div id="parties" class="row">
-    {{#each parties as |party|}}
+    {{#each parties as |party index|}}
     <div class="col-md-3">
       <div class="panel panel-default">
         <div class="panel-heading">
-          <p>{{party.rank}}. <a href="/political_parties/{{party.political_party}}">{{party.political_party}}</a></p>
+          <p>{{plus1 index}}. <a href="/political_parties/{{party.political_party}}">{{party.political_party}}</a></p>
         </div>
         <div class="panel-body">
           <p>得票数: {{party.vote_count}}</p>

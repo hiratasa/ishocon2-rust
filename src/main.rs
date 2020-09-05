@@ -1,3 +1,5 @@
+mod helpers;
+
 use actix_files::Files;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 
