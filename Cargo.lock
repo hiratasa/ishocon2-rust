@@ -1017,6 +1017,7 @@ dependencies = [
  "actix-files",
  "actix-rt",
  "actix-web",
+ "futures",
  "handlebars",
  "serde",
  "sqlx",
