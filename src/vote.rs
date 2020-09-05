@@ -1,13 +1,6 @@
 use sqlx::mysql::{MySqlPool, MySqlRow};
 use sqlx::Row;
 
-struct Vote {
-    id: i32,
-    user_id: i32,
-    candidate_id: i32,
-    keyword: String,
-}
-
 pub async fn get_vote_count_by_candidate_id(pool: &MySqlPool, candidate_id: i32) -> i64 {
     sqlx::query!(
         "SELECT COUNT(*) AS vote_count FROM votes WHERE candidate_id = ?",
