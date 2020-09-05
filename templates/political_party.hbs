@@ -1,0 +1,28 @@
+{{#*inline "content"}}
+<div class="jumbotron">
+  <div class="container">
+    <h1>{{political_party}}</h1>
+  </div>
+</div>
+<div class="container">
+  <div class="row">
+    <div id="info" class="jumbotron">
+      <h2>得票数</h2>
+      <p id="votes">{{votes}}</p>
+      <h2>候補者</h2>
+      <ul id="members">
+        {{#each candidates as |candidate|}}
+        <li>{{candidate.name}}</li>
+        {{/each}}
+      </ul>
+      <h2>支持者の声</h2>
+      <ul id="voices">
+        {{#each keywords as |keyword|}}
+        <li>{{keyword}}</li>
+        {{/each}}
+      </ul>
+    </div>
+  </div>
+</div>
+{{/inline}}
+{{~> layout~}}
