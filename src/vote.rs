@@ -37,20 +37,22 @@ pub async fn create_vote(pool: &MySqlPool, user_id: i32, candidate_id: i32, keyw
 
 pub async fn get_voice_of_supporter(pool: &MySqlPool, candidate_ids: &Vec<i32>) -> Vec<String> {
     // Not use macro query!, because the number of ids are dynamic.
-    sqlx::query(
-        &(String::from(
-            "
+    let sql = String::from(
+        "
             SELECT keyword
             FROM votes
             WHERE candidate_id IN (",
-        ) + &vec!["?"; candidate_ids.len()].join(",")
-            + ")
+    ) + &vec!["?"; candidate_ids.len()].join(",")
+        + ")
             GROUP BY keyword
             ORDER BY COUNT(*) DESC
-            LIMIT 10"),
-    )
-    .try_map(|row: MySqlRow| row.try_get(0))
-    .fetch_all(pool)
-    .await
-    .expect("failed to get voice of supporters")
+            LIMIT 10";
+    let mut q = sqlx::query(&sql);
+    for candidate_id in candidate_ids {
+        q = q.bind(candidate_id);
+    }
+    q.try_map(|row: MySqlRow| row.try_get(0))
+        .fetch_all(pool)
+        .await
+        .expect("failed to get voice of supporters")
 }
