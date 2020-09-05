@@ -216,7 +216,7 @@ async fn do_vote(
 
 async fn initialize(pool: web::Data<MySqlPool>) -> impl Responder {
     sqlx::query!("DELETE FROM votes")
-        .execute(&**pool)
+        .execute(pool.get_ref())
         .await
         .expect("failed to initialize.");
 
