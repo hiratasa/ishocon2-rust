@@ -25,6 +25,7 @@ async fn show_political_party(name: web::Path<(String,)>) -> impl Responder {
 }
 
 async fn show_vote() -> impl Responder {
+    // TODO: Display all candidates
     "not implemented"
 }
 
