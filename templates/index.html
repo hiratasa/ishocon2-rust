@@ -8,15 +8,11 @@
 <div class="container">
   <h2>個人の部</h2>
   <div id="people" class="row">
-    {% for candidate in candidates %}
+    {% for candidate in top_candidates %}
     <div class="col-md-3">
       <div class="panel panel-default">
         <div class="panel-heading">
-          {% if loop.index0 < 10 %}
           <p>{{loop.index}}. <a href="/candidates/{{candidate.id}}">{{candidate.name}}</a></p>
-          {% else %}
-          <p>最下位. <a href="/candidates/{{candidate.id}}">{{candidate.name}}</a></p>
-          {% endif %}
         </div>
         <div class="panel-body">
           <p>得票数: {{candidate.vote_count}}</p>
@@ -25,6 +21,17 @@
       </div>
     </div>
     {% endfor %}
+    <div class="col-md-3">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <p>最下位. <a href="/candidates/{{worst_candidate.id}}">{{worst_candidate.name}}</a></p>
+        </div>
+        <div class="panel-body">
+          <p>得票数: {{worst_candidate.vote_count}}</p>
+          <p>政党: {{worst_candidate.political_party}}</p>
+        </div>
+      </div>
+    </div>
   </div>
   <h2>政党の部</h2>
   <div id="parties" class="row">

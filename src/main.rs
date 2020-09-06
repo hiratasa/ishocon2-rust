@@ -26,8 +26,9 @@ struct SexRatio {
 
 #[derive(Template)]
 #[template(path = "index.html")]
-struct IndexTmplContext {
-    candidates: Vec<Candidate>,
+struct IndexTmplContext<'a> {
+    top_candidates: &'a [Candidate],
+    worst_candidate: &'a Candidate,
     parties: Vec<PartyElectionResult>,
     sex_ratio: SexRatio,
 }
@@ -35,19 +36,14 @@ struct IndexTmplContext {
 async fn index(pool: web::Data<MySqlPool>) -> impl Responder {
     newrelic_transaction!("GET index");
 
-    let election_results = get_all_candidate_sorted(&pool).await;
-
-    let tmp = election_results.clone();
-    let mut candidates = vec![];
-    candidates.extend_from_slice(&tmp[0..10]);
-    candidates.push(tmp.last().unwrap().clone());
+    let candidates = get_all_candidate_sorted(&pool).await;
 
     let party_names = get_all_party_name(&pool).await;
     let mut party_result_map = HashMap::new();
     for party_name in party_names {
         party_result_map.insert(party_name, 0);
     }
-    for r in &election_results {
+    for r in &candidates {
         *party_result_map.get_mut(&r.political_party).unwrap() += r.vote_count;
     }
     let mut parties = vec![];
@@ -60,7 +56,7 @@ async fn index(pool: web::Data<MySqlPool>) -> impl Responder {
     parties.sort_unstable_by_key(|r| Reverse(r.vote_count));
 
     let mut sex_ratio = SexRatio { men: 0, women: 0 };
-    for r in &election_results {
+    for r in &candidates {
         if r.sex == "男" {
             sex_ratio.men += r.vote_count;
         } else if r.sex == "女" {
@@ -69,7 +65,8 @@ async fn index(pool: web::Data<MySqlPool>) -> impl Responder {
     }
 
     let data = IndexTmplContext {
-        candidates,
+        top_candidates: &candidates[0..10],
+        worst_candidate: candidates.last().as_ref().unwrap(),
         parties,
         sex_ratio,
     };
