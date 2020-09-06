@@ -2,27 +2,19 @@ use futures::TryStreamExt;
 use serde::Serialize;
 use sqlx::mysql::MySqlPool;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct Candidate {
     pub id: i32,
     pub name: String,
     pub political_party: String,
     pub sex: String,
-}
-
-#[derive(Clone, Serialize)]
-pub struct CandidateElectionResult {
-    pub id: i32,
-    pub name: String,
-    pub political_party: String,
-    pub sex: String,
-    pub vote_count: i64,
+    pub vote_count: i32,
 }
 
 #[derive(Serialize)]
 pub struct PartyElectionResult {
     pub political_party: String,
-    pub vote_count: i64,
+    pub vote_count: i32,
 }
 
 pub async fn get_all_candidate(pool: &MySqlPool) -> Vec<Candidate> {
@@ -66,20 +58,45 @@ pub async fn get_candidates_by_political_party(pool: &MySqlPool, party: &str) ->
     .expect("failed to fetch candidate by party")
 }
 
-pub async fn get_election_result(pool: &MySqlPool) -> Vec<CandidateElectionResult> {
+pub async fn get_vote_count_by_candidate_id(pool: &MySqlPool, candidate_id: i32) -> i32 {
+    sqlx::query!(
+        "SELECT vote_count FROM candidates WHERE id = ?",
+        candidate_id
+    )
+    .fetch_one(pool)
+    .await
+    .expect("failed to fetch vote count by candidate id")
+    .vote_count
+}
+
+pub async fn get_vote_count_by_political_party(pool: &MySqlPool, political_party: &str) -> i32 {
+    sqlx::query!(
+        "SELECT IFNULL(CAST(SUM(vote_count) AS SIGNED), 0) AS vote_count FROM candidates WHERE political_party = ?",
+        political_party
+    )
+    .fetch_one(pool)
+    .await
+    .expect("failed to fetch vote count by political party")
+    .vote_count as i32
+}
+
+pub async fn get_all_candidate_sorted(pool: &MySqlPool) -> Vec<Candidate> {
     sqlx::query_as!(
-        CandidateElectionResult,
-        "
-            SELECT c.id, c.name, c.political_party, c.sex, IFNULL(v.count, 0) AS vote_count
-            FROM candidates AS c
-            LEFT OUTER JOIN (
-                SELECT candidate_id, CAST(SUM(vote_count) AS SIGNED) AS count
-                FROM votes
-                GROUP BY candidate_id) AS v
-            ON c.id = v.candidate_id
-            ORDER BY v.count DESC"
+        Candidate,
+        "SELECT * FROM candidates ORDER BY vote_count DESC"
     )
     .fetch_all(pool)
     .await
-    .expect("failed to fetch candidate by party")
+    .expect("failed to fetch all candidates sorted by vote_count")
+}
+
+pub async fn update_vote_count_of_candidate(pool: &MySqlPool, candidate_id: i32, vote_count: i32) {
+    sqlx::query!(
+        "UPDATE candidates SET vote_count = vote_count + ? WHERE id = ?",
+        vote_count,
+        candidate_id,
+    )
+    .execute(pool)
+    .await
+    .expect("failed to update vote_count of candidate");
 }

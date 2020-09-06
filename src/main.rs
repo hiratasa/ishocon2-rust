@@ -20,14 +20,14 @@ use user::*;
 use vote::*;
 
 struct SexRatio {
-    men: i64,
-    women: i64,
+    men: i32,
+    women: i32,
 }
 
 #[derive(Template)]
 #[template(path = "index.html")]
 struct IndexTmplContext {
-    candidates: Vec<CandidateElectionResult>,
+    candidates: Vec<Candidate>,
     parties: Vec<PartyElectionResult>,
     sex_ratio: SexRatio,
 }
@@ -35,7 +35,7 @@ struct IndexTmplContext {
 async fn index(pool: web::Data<MySqlPool>) -> impl Responder {
     newrelic_transaction!("GET index");
 
-    let election_results = get_election_result(&pool).await;
+    let election_results = get_all_candidate_sorted(&pool).await;
 
     let tmp = election_results.clone();
     let mut candidates = vec![];
@@ -81,7 +81,7 @@ async fn index(pool: web::Data<MySqlPool>) -> impl Responder {
 #[template(path = "candidate.html")]
 struct CandidateTmplContext {
     candidate: Candidate,
-    votes: i64,
+    votes: i32,
     keywords: Vec<String>,
 }
 
@@ -109,7 +109,7 @@ async fn show_candidate(pool: web::Data<MySqlPool>, path: web::Path<(i32,)>) -> 
 #[template(path = "political_party.html")]
 struct PoliticalPartyTmplContext {
     political_party: String,
-    votes: i64,
+    votes: i32,
     candidates: Vec<Candidate>,
     keywords: Vec<String>,
 }
@@ -121,13 +121,7 @@ async fn show_political_party(
     newrelic_transaction!("GET political_party");
 
     let political_party = &path.0;
-    let election_results = get_election_result(&pool).await;
-    let mut votes = 0;
-    for r in election_results {
-        if &r.political_party == political_party {
-            votes += r.vote_count;
-        }
-    }
+    let votes = get_vote_count_by_political_party(&pool, political_party).await;
 
     let candidates = get_candidates_by_political_party(&pool, political_party).await;
 
@@ -203,6 +197,12 @@ async fn do_vote(pool: web::Data<MySqlPool>, form: web::Form<VoteFormData>) -> i
                     &candidate.as_ref().unwrap().political_party,
                 )
                 .await;
+                update_vote_count_of_candidate(
+                    &pool,
+                    candidate.as_ref().unwrap().id,
+                    vote_count as i32,
+                )
+                .await;
                 "投票に成功しました"
             }
         }
@@ -221,6 +221,10 @@ async fn initialize(pool: web::Data<MySqlPool>) -> impl Responder {
         .execute(pool.get_ref())
         .await
         .expect("failed to initialize.");
+    sqlx::query!("UPDATE candidates SET vote_count = 0;")
+        .execute(pool.get_ref())
+        .await
+        .expect("failed to initialize candidates vote_count.");
 
     HttpResponse::Ok().body("Finish")
 }

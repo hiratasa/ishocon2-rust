@@ -1,17 +1,6 @@
 use futures::TryStreamExt;
 use sqlx::mysql::MySqlPool;
 
-pub async fn get_vote_count_by_candidate_id(pool: &MySqlPool, candidate_id: i32) -> i64 {
-    sqlx::query!(
-        "SELECT IFNULL(CAST(SUM(vote_count) AS SIGNED), 0) AS vote_count FROM votes WHERE candidate_id = ?",
-        candidate_id
-    )
-    .fetch_one(pool)
-    .await
-    .expect("failed to fetch vote count by candidate id")
-    .vote_count
-}
-
 pub async fn get_user_voted_count(pool: &MySqlPool, user_id: i32) -> i64 {
     sqlx::query!(
         "SELECT IFNULL(CAST(SUM(vote_count) AS SIGNED), 0) AS vote_count FROM votes WHERE user_id = ?",
