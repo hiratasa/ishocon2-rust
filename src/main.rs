@@ -34,16 +34,16 @@ struct IndexTmplContext {
 }
 
 async fn index(pool: web::Data<MySqlPool>, hb: web::Data<Handlebars<'_>>) -> impl Responder {
-    let _t = newrelic_transaction!("GET index");
+    newrelic_transaction!("GET index");
 
-    let election_results = nrdb!(_t, get_election_result(&pool)).await;
+    let election_results = get_election_result(&pool).await;
 
     let tmp = election_results.clone();
     let mut candidates = vec![];
     candidates.extend_from_slice(&tmp[0..10]);
     candidates.push(tmp.last().unwrap().clone());
 
-    let party_names = nrdb!(_t, get_all_party_name(&pool)).await;
+    let party_names = get_all_party_name(&pool).await;
     let mut party_result_map = HashMap::new();
     for party_name in party_names {
         party_result_map.insert(party_name, 0);
@@ -90,16 +90,15 @@ async fn show_candidate(
     hb: web::Data<Handlebars<'_>>,
     path: web::Path<(i32,)>,
 ) -> impl Responder {
-    let _t = newrelic_transaction!("GET candidate");
+    newrelic_transaction!("GET candidate");
 
     let id = path.0;
-    let candidate = match nrdb!(_t, get_candidate(&pool, id)).await {
+    let candidate = match get_candidate(&pool, id).await {
         Some(candidate) => candidate,
         None => return HttpResponse::Found().header(header::LOCATION, "/").finish(),
     };
-    let votes = nrdb!(_t, get_vote_count_by_candidate_id(&pool, id)).await;
-    let ids = vec![id];
-    let keywords = nrdb!(_t, get_voice_of_supporter(&pool, &ids)).await;
+    let votes = get_vote_count_by_candidate_id(&pool, id).await;
+    let keywords = get_voice_of_supporter(&pool, &vec![id]).await;
 
     let data = CandidateTmplContext {
         candidate,
@@ -123,10 +122,10 @@ async fn show_political_party(
     hb: web::Data<Handlebars<'_>>,
     path: web::Path<(String,)>,
 ) -> impl Responder {
-    let _t = newrelic_transaction!("GET political_party");
+    newrelic_transaction!("GET political_party");
 
     let political_party = &path.0;
-    let election_results = nrdb!(_t, get_election_result(&pool)).await;
+    let election_results = get_election_result(&pool).await;
     let mut votes = 0;
     for r in election_results {
         if &r.political_party == political_party {
@@ -134,17 +133,13 @@ async fn show_political_party(
         }
     }
 
-    let candidates = nrdb!(
-        _t,
-        get_candidates_by_political_party(&pool, political_party)
-    )
-    .await;
+    let candidates = get_candidates_by_political_party(&pool, political_party).await;
     let mut candidate_ids = vec![];
     for c in &candidates {
         candidate_ids.push(c.id);
     }
 
-    let keywords = nrdb!(_t, get_voice_of_supporter(&pool, &candidate_ids)).await;
+    let keywords = get_voice_of_supporter(&pool, &candidate_ids).await;
 
     let data = PoliticalPartyTmplContext {
         political_party: political_party.clone(),
@@ -163,9 +158,9 @@ struct VoteTmplContext {
 }
 
 async fn show_vote(pool: web::Data<MySqlPool>, hb: web::Data<Handlebars<'_>>) -> impl Responder {
-    let _t = newrelic_transaction!("GET vote");
+    newrelic_transaction!("GET vote");
 
-    let candidates = nrdb!(_t, get_all_candidate(&pool)).await;
+    let candidates = get_all_candidate(&pool).await;
 
     let data = VoteTmplContext {
         candidates,
@@ -190,20 +185,12 @@ async fn do_vote(
     hb: web::Data<Handlebars<'_>>,
     form: web::Form<VoteFormData>,
 ) -> impl Responder {
-    let _t = newrelic_transaction!("POST vote");
+    newrelic_transaction!("POST vote");
 
-    let user = nrdb!(
-        _t,
-        get_user(&pool, &form.name, &form.address, &form.mynumber)
-    )
-    .await;
-    let candidate = nrdb!(_t, get_candidate_by_name(&pool, &form.candidate)).await;
-    let voted_count = nrdb!(
-        _t,
-        get_user_voted_count(&pool, user.as_ref().map_or(0, |u| u.id))
-    )
-    .await;
-    let candidates = nrdb!(_t, get_all_candidate(&pool)).await;
+    let user = get_user(&pool, &form.name, &form.address, &form.mynumber).await;
+    let candidate = get_candidate_by_name(&pool, &form.candidate).await;
+    let voted_count = get_user_voted_count(&pool, user.as_ref().map_or(0, |u| u.id)).await;
+    let candidates = get_all_candidate(&pool).await;
     let vote_count = form.vote_count;
 
     let message = match user {
