@@ -224,6 +224,14 @@ async fn initialize(pool: web::Data<MySqlPool>) -> impl Responder {
         .execute(pool.get_ref())
         .await
         .expect("failed to initialize.");
+    sqlx::query!("DELETE FROM keywords")
+        .execute(pool.get_ref())
+        .await
+        .expect("failed to initialize keywords.");
+    sqlx::query!("DELETE FROM party_keywords")
+        .execute(pool.get_ref())
+        .await
+        .expect("failed to initialize party_keywords.");
     sqlx::query!("UPDATE candidates SET vote_count = 0;")
         .execute(pool.get_ref())
         .await
