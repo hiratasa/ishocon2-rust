@@ -245,7 +245,7 @@ fn database_url() -> String {
     let pass = env::var("ISHOCON2_DB_PASSWORD").unwrap_or("ishocon".to_owned());
     let dbname = env::var("ISHOCON2_DB_NAME").unwrap_or("ishocon2".to_owned());
 
-    format!("mysql://{}:{}@localhost/{}", user, pass, dbname)
+    format!("mysql://{}:{}@localhost/{}?socket=/var/run/mysqld/mysqld.sock", user, pass, dbname)
 }
 
 #[actix_rt::main]
