@@ -1,5 +1,5 @@
-use sqlx::mysql::{MySqlPool, MySqlRow};
-use sqlx::Row;
+use futures::TryStreamExt;
+use sqlx::mysql::MySqlPool;
 
 pub async fn get_vote_count_by_candidate_id(pool: &MySqlPool, candidate_id: i32) -> i64 {
     sqlx::query!(
@@ -29,37 +29,41 @@ pub async fn create_vote(
     candidate_id: i32,
     keyword: &str,
     vote_count: i32,
+    political_party: &str,
 ) {
     sqlx::query!(
-        "INSERT INTO votes (user_id, candidate_id, keyword, vote_count) VALUES (?, ?, ?, ?)",
+        "INSERT INTO votes (user_id, candidate_id, keyword, vote_count, political_party) VALUES (?, ?, ?, ?, ?)",
         user_id,
         candidate_id,
         keyword,
-        vote_count
+        vote_count,
+        political_party
     )
     .execute(pool)
     .await
     .expect("failed to create vote");
 }
 
-pub async fn get_voice_of_supporter(pool: &MySqlPool, candidate_ids: &Vec<i32>) -> Vec<String> {
-    // Not use macro query!, because the number of ids are dynamic.
-    let sql = String::from(
-        "
-            SELECT keyword
-            FROM votes
-            WHERE candidate_id IN (",
-    ) + &vec!["?"; candidate_ids.len()].join(",")
-        + ")
-            GROUP BY keyword
-            ORDER BY SUM(vote_count) DESC
-            LIMIT 10";
-    let mut q = sqlx::query(&sql);
-    for candidate_id in candidate_ids {
-        q = q.bind(candidate_id);
-    }
-    q.try_map(|row: MySqlRow| row.try_get(0))
-        .fetch_all(pool)
+pub async fn get_voice_of_supporter_of_candidate(
+    pool: &MySqlPool,
+    candidate_id: i32,
+) -> Vec<String> {
+    sqlx::query!("SELECT keyword FROM votes WHERE candidate_id = ? GROUP BY keyword ORDER BY SUM(vote_count) DESC LIMIT 10", candidate_id)
+        .fetch(pool)
+        .map_ok(|row| row.keyword)
+        .try_collect()
         .await
-        .expect("failed to get voice of supporters")
+        .expect("failed to get voice of supporters of candidate")
+}
+
+pub async fn get_voice_of_supporter_of_party(
+    pool: &MySqlPool,
+    political_party: &str,
+) -> Vec<String> {
+    sqlx::query!("SELECT keyword FROM votes WHERE political_party = ? GROUP BY keyword ORDER BY SUM(vote_count) DESC LIMIT 10", political_party)
+        .fetch(pool)
+        .map_ok(|row| row.keyword)
+        .try_collect()
+        .await
+        .expect("failed to get voice of supporters of political party")
 }

@@ -98,7 +98,7 @@ async fn show_candidate(
         None => return HttpResponse::Found().header(header::LOCATION, "/").finish(),
     };
     let votes = get_vote_count_by_candidate_id(&pool, id).await;
-    let keywords = get_voice_of_supporter(&pool, &vec![id]).await;
+    let keywords = get_voice_of_supporter_of_candidate(&pool, id).await;
 
     let data = CandidateTmplContext {
         candidate,
@@ -134,12 +134,8 @@ async fn show_political_party(
     }
 
     let candidates = get_candidates_by_political_party(&pool, political_party).await;
-    let mut candidate_ids = vec![];
-    for c in &candidates {
-        candidate_ids.push(c.id);
-    }
 
-    let keywords = get_voice_of_supporter(&pool, &candidate_ids).await;
+    let keywords = get_voice_of_supporter_of_party(&pool, political_party).await;
 
     let data = PoliticalPartyTmplContext {
         political_party: political_party.clone(),
@@ -211,6 +207,7 @@ async fn do_vote(
                     candidate.as_ref().unwrap().id,
                     &form.keyword,
                     vote_count as i32,
+                    &candidate.as_ref().unwrap().political_party,
                 )
                 .await;
                 "投票に成功しました"
