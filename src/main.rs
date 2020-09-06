@@ -243,7 +243,7 @@ fn database_url() -> String {
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     let pool = MySqlPoolOptions::new()
-        .max_connections(5)
+        .max_connections(1000)
         .connect(&database_url())
         .await
         .unwrap();
