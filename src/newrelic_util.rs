@@ -1,6 +1,6 @@
 use std::env;
 
-use newrelic::App;
+use newrelic::{App, Transaction};
 
 const APP_NAME: &str = "ishocon2-rust-hiratasa";
 
@@ -16,6 +16,13 @@ impl NewRelicAppData {
     fn new_with_key(key: &str) -> NewRelicAppData {
         let app = App::new(APP_NAME, key).expect("Could not create app.");
         NewRelicAppData { app: Some(app) }
+    }
+
+    pub fn transaction(&self, name: &str) -> Option<Transaction> {
+        self.app.as_ref().map(|app| {
+            app.web_transaction(name)
+                .expect("Could not start transaction")
+        })
     }
 }
 
@@ -40,7 +47,7 @@ pub mod actix_web {
     use super::NewRelicAppData;
 
     // Use with App::wrap_fn
-    pub fn log_transaction<S, Res>(
+    pub fn wrap_log_transaction<S, Res>(
         req: ServiceRequest,
         srv: &mut S,
     ) -> impl Future<Output = Result<Res, Error>>
@@ -49,10 +56,7 @@ pub mod actix_web {
     {
         let newrelic: &NewRelicAppData = &req.app_data().unwrap();
 
-        let transaction = newrelic.app.as_ref().map(|app| {
-            app.web_transaction(req.path())
-                .expect("Could not start transaction")
-        });
+        let transaction = newrelic.transaction(&(req.method().to_string() + req.path()));
 
         srv.call(req).map(|res| {
             // take ownership

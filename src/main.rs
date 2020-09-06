@@ -18,6 +18,8 @@ use candidate::*;
 use user::*;
 use vote::*;
 
+use newrelic_util::NewRelicAppData;
+
 #[derive(Serialize)]
 struct SexRatio {
     men: i64,
@@ -31,7 +33,13 @@ struct IndexTmplContext {
     sex_ratio: SexRatio,
 }
 
-async fn index(pool: web::Data<MySqlPool>, hb: web::Data<Handlebars<'_>>) -> impl Responder {
+async fn index(
+    pool: web::Data<MySqlPool>,
+    hb: web::Data<Handlebars<'_>>,
+    newrelic: web::Data<NewRelicAppData>,
+) -> impl Responder {
+    let _transaction = newrelic.transaction("GET index");
+
     let election_results = get_election_result(&pool).await;
 
     let tmp = election_results.clone();
@@ -85,7 +93,10 @@ async fn show_candidate(
     pool: web::Data<MySqlPool>,
     hb: web::Data<Handlebars<'_>>,
     path: web::Path<(i32,)>,
+    newrelic: web::Data<NewRelicAppData>,
 ) -> impl Responder {
+    let _transaction = newrelic.transaction("GET candidate");
+
     let id = path.0;
     let candidate = match get_candidate(&pool, id).await {
         Some(candidate) => candidate,
@@ -115,7 +126,10 @@ async fn show_political_party(
     pool: web::Data<MySqlPool>,
     hb: web::Data<Handlebars<'_>>,
     path: web::Path<(String,)>,
+    newrelic: web::Data<NewRelicAppData>,
 ) -> impl Responder {
+    let _transaction = newrelic.transaction("GET political_party");
+
     let political_party = &path.0;
     let election_results = get_election_result(&pool).await;
     let mut votes = 0;
@@ -149,7 +163,13 @@ struct VoteTmplContext {
     message: String,
 }
 
-async fn show_vote(pool: web::Data<MySqlPool>, hb: web::Data<Handlebars<'_>>) -> impl Responder {
+async fn show_vote(
+    pool: web::Data<MySqlPool>,
+    hb: web::Data<Handlebars<'_>>,
+    newrelic: web::Data<NewRelicAppData>,
+) -> impl Responder {
+    let _transaction = newrelic.transaction("GET vote");
+
     let candidates = get_all_candidate(&pool).await;
 
     let data = VoteTmplContext {
@@ -174,7 +194,10 @@ async fn do_vote(
     pool: web::Data<MySqlPool>,
     hb: web::Data<Handlebars<'_>>,
     form: web::Form<VoteFormData>,
+    newrelic: web::Data<NewRelicAppData>,
 ) -> impl Responder {
+    let _transaction = newrelic.transaction("POST vote");
+
     let user = get_user(&pool, &form.name, &form.address, &form.mynumber).await;
     let candidate = get_candidate_by_name(&pool, &form.candidate).await;
     let voted_count = get_user_voted_count(&pool, user.as_ref().map_or(0, |u| u.id)).await;
@@ -254,7 +277,6 @@ async fn main() -> std::io::Result<()> {
             .app_data(pool.clone())
             .app_data(hb.clone())
             .app_data(newrelic.clone())
-            .wrap_fn(newrelic_util::actix_web::log_transaction)
             .service(Files::new("/css", "./public/css"))
             .route("/", web::get().to(index))
             .route("/candidates/{id}", web::get().to(show_candidate))
