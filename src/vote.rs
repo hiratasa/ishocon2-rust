@@ -33,23 +33,64 @@ pub async fn create_vote(
     .expect("failed to create vote");
 }
 
+pub async fn update_candidate_keyword(
+    pool: &MySqlPool,
+    candidate_id: i32,
+    keyword: &str,
+    vote_count: i32,
+) {
+    sqlx::query!(
+        "INSERT INTO keywords (keyword, candidate_id, vote_count) VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE vote_count = vote_count + ?",
+        keyword,
+        candidate_id,
+        vote_count,
+        vote_count,
+    )
+    .execute(pool)
+    .await
+    .expect("failed to update keyword of candidate");
+}
+
+pub async fn update_party_keyword(
+    pool: &MySqlPool,
+    political_party: &str,
+    keyword: &str,
+    vote_count: i32,
+) {
+    sqlx::query!(
+        "INSERT INTO party_keywords (keyword, political_party, vote_count) VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE vote_count = vote_count + ?",
+        keyword,
+        political_party,
+        vote_count,
+        vote_count,
+    )
+    .execute(pool)
+    .await
+    .expect("failed to update keyword of party");
+}
+
 pub async fn get_voice_of_supporter_of_candidate(
     pool: &MySqlPool,
     candidate_id: i32,
 ) -> Vec<String> {
-    sqlx::query!("SELECT keyword FROM votes WHERE candidate_id = ? GROUP BY keyword ORDER BY SUM(vote_count) DESC LIMIT 10", candidate_id)
-        .fetch(pool)
-        .map_ok(|row| row.keyword)
-        .try_collect()
-        .await
-        .expect("failed to get voice of supporters of candidate")
+    sqlx::query!(
+        "SELECT keyword FROM keywords WHERE candidate_id = ? ORDER BY vote_count DESC LIMIT 10",
+        candidate_id
+    )
+    .fetch(pool)
+    .map_ok(|row| row.keyword)
+    .try_collect()
+    .await
+    .expect("failed to get voice of supporters of candidate")
 }
 
 pub async fn get_voice_of_supporter_of_party(
     pool: &MySqlPool,
     political_party: &str,
 ) -> Vec<String> {
-    sqlx::query!("SELECT keyword FROM votes WHERE political_party = ? GROUP BY keyword ORDER BY SUM(vote_count) DESC LIMIT 10", political_party)
+    sqlx::query!("SELECT keyword FROM party_keywords WHERE political_party = ? ORDER BY vote_count DESC LIMIT 10", political_party)
         .fetch(pool)
         .map_ok(|row| row.keyword)
         .try_collect()

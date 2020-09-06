@@ -12,6 +12,7 @@ use std::env;
 use actix_files::Files;
 use actix_web::{http::header, web, App, HttpResponse, HttpServer, Responder};
 use askama::Template;
+use futures::join as futures_join;
 use serde::Deserialize;
 use sqlx::mysql::{MySqlPool, MySqlPoolOptions};
 
@@ -185,21 +186,26 @@ async fn do_vote(pool: web::Data<MySqlPool>, form: web::Form<VoteFormData>) -> i
             } else if form.keyword == "" {
                 "投票理由を記入してください"
             } else {
-                create_vote(
-                    &pool,
-                    user.id,
-                    candidate.as_ref().unwrap().id,
-                    &form.keyword,
-                    vote_count as i32,
-                    &candidate.as_ref().unwrap().political_party,
-                )
-                .await;
-                update_vote_count_of_candidate(
-                    &pool,
-                    candidate.as_ref().unwrap().id,
-                    vote_count as i32,
-                )
-                .await;
+                let candidate = candidate.as_ref().unwrap();
+
+                futures_join!(
+                    create_vote(
+                        &pool,
+                        user.id,
+                        candidate.id,
+                        &form.keyword,
+                        vote_count as i32,
+                        &candidate.political_party,
+                    ),
+                    update_vote_count_of_candidate(&pool, candidate.id, vote_count as i32),
+                    update_candidate_keyword(&pool, candidate.id, &form.keyword, vote_count as i32),
+                    update_party_keyword(
+                        &pool,
+                        &candidate.political_party,
+                        &form.keyword,
+                        vote_count as i32,
+                    )
+                );
                 "投票に成功しました"
             }
         }
