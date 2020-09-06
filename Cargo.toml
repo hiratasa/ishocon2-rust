@@ -7,7 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["use_newrelic"]
+default = []
 use_newrelic = ["newrelic", "lazy_static"]
 
 [dependencies]
