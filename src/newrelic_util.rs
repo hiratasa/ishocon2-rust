@@ -29,7 +29,24 @@ pub mod detail {
     #[allow(unused_macros)]
     macro_rules! newrelic_transaction {
         ($name:expr) => {
-            let _transaction = newrelic_app!().transaction($name);
+            newrelic_app!().transaction($name)
+        };
+    }
+
+    #[allow(unused_macros)]
+    macro_rules! nrdb {
+        ($tr:expr,$f:expr) => {
+            if let Some(tr) = $tr.as_ref() {
+                tr.datastore_segment(
+                    &newrelic::DatastoreParamsBuilder::new(newrelic::Datastore::MySQL)
+                        .operation(stringify!($f))
+                        .build()
+                        .expect("Invalid datastore segment parameters"),
+                    |_| $f,
+                )
+            } else {
+                $f
+            }
         };
     }
 
@@ -100,6 +117,15 @@ mod detail {
 
     #[allow(unused_macros)]
     macro_rules! newrelic_transaction {
-        ($($_:expr),*) => {};
+        ($($_:expr),*) => {
+            ()
+        };
+    }
+
+    #[allow(unused_macros)]
+    macro_rules! nrdb {
+        ($tr:expr,$f:expr) => {
+            $f
+        };
     }
 }
