@@ -1,4 +1,5 @@
-{{#*inline "content"}}
+{% extends "layout.html" %}
+{% block content %}
 <div class="jumbotron">
   <div class="container">
     <h1>選挙の結果を大発表！</h1>
@@ -7,15 +8,15 @@
 <div class="container">
   <h2>個人の部</h2>
   <div id="people" class="row">
-    {{#each candidates as |candidate index|}}
+    {% for candidate in candidates %}
     <div class="col-md-3">
       <div class="panel panel-default">
         <div class="panel-heading">
-          {{#if (lt index 10)}}
-          <p>{{plus1 index}}. <a href="/candidates/{{candidate.id}}">{{candidate.name}}</a></p>
-          {{else}}
+          {% if loop.index0 < 10 %}
+          <p>{{loop.index}}. <a href="/candidates/{{candidate.id}}">{{candidate.name}}</a></p>
+          {% else %}
           <p>最下位. <a href="/candidates/{{candidate.id}}">{{candidate.name}}</a></p>
-          {{/if}}
+          {% endif %}
         </div>
         <div class="panel-body">
           <p>得票数: {{candidate.vote_count}}</p>
@@ -23,22 +24,23 @@
         </div>
       </div>
     </div>
-    {{/each}}
+    {% endfor %}
   </div>
   <h2>政党の部</h2>
   <div id="parties" class="row">
-    {{#each parties as |party index|}}
+    {% for party in parties %}
     <div class="col-md-3">
       <div class="panel panel-default">
         <div class="panel-heading">
-          <p>{{plus1 index}}. <a href="/political_parties/{{party.political_party}}">{{party.political_party}}</a></p>
+          <p>{{loop.index}}. <a href="/political_parties/{{party.political_party}}">{{party.political_party}}</a>
+          </p>
         </div>
         <div class="panel-body">
           <p>得票数: {{party.vote_count}}</p>
         </div>
       </div>
     </div>
-    {{/each}}
+    {% endfor %}
   </div>
   <h2>男女比率</h2>
   <div id="sex_ratio" class="row">
@@ -64,5 +66,4 @@
     </div>
   </div>
 </div>
-{{/inline}}
-{{~> layout ~}}
+{% endblock %}

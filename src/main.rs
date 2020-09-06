@@ -1,5 +1,4 @@
 mod candidate;
-mod helpers;
 mod user;
 mod vote;
 
@@ -12,28 +11,28 @@ use std::env;
 
 use actix_files::Files;
 use actix_web::{http::header, web, App, HttpResponse, HttpServer, Responder};
-use handlebars::Handlebars;
-use serde::{Deserialize, Serialize};
+use askama::Template;
+use serde::Deserialize;
 use sqlx::mysql::{MySqlPool, MySqlPoolOptions};
 
 use candidate::*;
 use user::*;
 use vote::*;
 
-#[derive(Serialize)]
 struct SexRatio {
     men: i64,
     women: i64,
 }
 
-#[derive(Serialize)]
+#[derive(Template)]
+#[template(path = "index.html")]
 struct IndexTmplContext {
     candidates: Vec<CandidateElectionResult>,
     parties: Vec<PartyElectionResult>,
     sex_ratio: SexRatio,
 }
 
-async fn index(pool: web::Data<MySqlPool>, hb: web::Data<Handlebars<'_>>) -> impl Responder {
+async fn index(pool: web::Data<MySqlPool>) -> impl Responder {
     newrelic_transaction!("GET index");
 
     let election_results = get_election_result(&pool).await;
@@ -75,21 +74,18 @@ async fn index(pool: web::Data<MySqlPool>, hb: web::Data<Handlebars<'_>>) -> imp
         sex_ratio,
     };
 
-    HttpResponse::Ok().body(hb.render("index", &data).unwrap())
+    HttpResponse::Ok().body(data.render().unwrap())
 }
 
-#[derive(Serialize)]
+#[derive(Template)]
+#[template(path = "candidate.html")]
 struct CandidateTmplContext {
     candidate: Candidate,
     votes: i64,
     keywords: Vec<String>,
 }
 
-async fn show_candidate(
-    pool: web::Data<MySqlPool>,
-    hb: web::Data<Handlebars<'_>>,
-    path: web::Path<(i32,)>,
-) -> impl Responder {
+async fn show_candidate(pool: web::Data<MySqlPool>, path: web::Path<(i32,)>) -> impl Responder {
     newrelic_transaction!("GET candidate");
 
     let id = path.0;
@@ -106,10 +102,11 @@ async fn show_candidate(
         keywords,
     };
 
-    HttpResponse::Ok().body(hb.render("candidate", &data).unwrap())
+    HttpResponse::Ok().body(data.render().unwrap())
 }
 
-#[derive(Serialize)]
+#[derive(Template)]
+#[template(path = "political_party.html")]
 struct PoliticalPartyTmplContext {
     political_party: String,
     votes: i64,
@@ -119,7 +116,6 @@ struct PoliticalPartyTmplContext {
 
 async fn show_political_party(
     pool: web::Data<MySqlPool>,
-    hb: web::Data<Handlebars<'_>>,
     path: web::Path<(String,)>,
 ) -> impl Responder {
     newrelic_transaction!("GET political_party");
@@ -144,16 +140,17 @@ async fn show_political_party(
         keywords,
     };
 
-    HttpResponse::Ok().body(hb.render("political_party", &data).unwrap())
+    HttpResponse::Ok().body(data.render().unwrap())
 }
 
-#[derive(Serialize)]
+#[derive(Template)]
+#[template(path = "vote.html")]
 struct VoteTmplContext {
     candidates: Vec<Candidate>,
     message: String,
 }
 
-async fn show_vote(pool: web::Data<MySqlPool>, hb: web::Data<Handlebars<'_>>) -> impl Responder {
+async fn show_vote(pool: web::Data<MySqlPool>) -> impl Responder {
     newrelic_transaction!("GET vote");
 
     let candidates = get_all_candidate(&pool).await;
@@ -163,7 +160,7 @@ async fn show_vote(pool: web::Data<MySqlPool>, hb: web::Data<Handlebars<'_>>) ->
         message: String::new(),
     };
 
-    HttpResponse::Ok().body(hb.render("vote", &data).unwrap())
+    HttpResponse::Ok().body(data.render().unwrap())
 }
 
 #[derive(Deserialize)]
@@ -176,11 +173,7 @@ struct VoteFormData {
     keyword: String,
 }
 
-async fn do_vote(
-    pool: web::Data<MySqlPool>,
-    hb: web::Data<Handlebars<'_>>,
-    form: web::Form<VoteFormData>,
-) -> impl Responder {
+async fn do_vote(pool: web::Data<MySqlPool>, form: web::Form<VoteFormData>) -> impl Responder {
     newrelic_transaction!("POST vote");
 
     let user = get_user(&pool, &form.name, &form.address, &form.mynumber).await;
@@ -220,7 +213,7 @@ async fn do_vote(
         message: message.to_owned(),
     };
 
-    HttpResponse::Ok().body(hb.render("vote", &data).unwrap())
+    HttpResponse::Ok().body(data.render().unwrap())
 }
 
 async fn initialize(pool: web::Data<MySqlPool>) -> impl Responder {
@@ -249,18 +242,11 @@ async fn main() -> std::io::Result<()> {
         .unwrap();
     let pool = web::Data::new(pool);
 
-    let mut hb = Handlebars::new();
-    hb.register_templates_directory(".hbs", "./templates/")
-        .unwrap();
-    hb.register_helper("plus1", Box::new(helpers::plus1));
-    let hb = web::Data::new(hb);
-
     newrelic_init!();
 
     HttpServer::new(move || {
         App::new()
             .app_data(pool.clone())
-            .app_data(hb.clone())
             .service(Files::new("/css", "./public/css"))
             .route("/", web::get().to(index))
             .route("/candidates/{id}", web::get().to(show_candidate))

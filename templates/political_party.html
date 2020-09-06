@@ -1,4 +1,5 @@
-{{#*inline "content"}}
+{% extends "layout.html" %}
+{% block content %}
 <div class="jumbotron">
   <div class="container">
     <h1>{{political_party}}</h1>
@@ -11,18 +12,17 @@
       <p id="votes">{{votes}}</p>
       <h2>候補者</h2>
       <ul id="members">
-        {{#each candidates as |candidate|}}
+        {% for candidate in candidates %}
         <li>{{candidate.name}}</li>
-        {{/each}}
+        {% endfor %}
       </ul>
       <h2>支持者の声</h2>
       <ul id="voices">
-        {{#each keywords as |keyword|}}
+        {% for keyword in keywords %}
         <li>{{keyword}}</li>
-        {{/each}}
+        {% endfor %}
       </ul>
     </div>
   </div>
 </div>
-{{/inline}}
-{{~> layout~}}
+{% endblock %}
