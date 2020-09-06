@@ -205,15 +205,14 @@ async fn do_vote(
             } else if form.keyword == "" {
                 "投票理由を記入してください"
             } else {
-                for _ in 0..vote_count {
-                    create_vote(
-                        &pool,
-                        user.id,
-                        candidate.as_ref().unwrap().id,
-                        &form.keyword,
-                    )
-                    .await;
-                }
+                create_vote(
+                    &pool,
+                    user.id,
+                    candidate.as_ref().unwrap().id,
+                    &form.keyword,
+                    vote_count as i32,
+                )
+                .await;
                 "投票に成功しました"
             }
         }

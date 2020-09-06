@@ -73,7 +73,7 @@ pub async fn get_election_result(pool: &MySqlPool) -> Vec<CandidateElectionResul
             SELECT c.id, c.name, c.political_party, c.sex, IFNULL(v.count, 0) AS vote_count
             FROM candidates AS c
             LEFT OUTER JOIN (
-                SELECT candidate_id, COUNT(*) AS count
+                SELECT candidate_id, CAST(SUM(vote_count) AS SIGNED) AS count
                 FROM votes
                 GROUP BY candidate_id) AS v
             ON c.id = v.candidate_id
