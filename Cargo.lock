@@ -1020,6 +1020,7 @@ dependencies = [
  "actix-web",
  "futures",
  "handlebars",
+ "lazy_static",
  "newrelic",
  "serde",
  "sqlx",

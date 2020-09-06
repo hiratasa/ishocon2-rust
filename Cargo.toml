@@ -6,6 +6,10 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["use_newrelic"]
+use_newrelic = ["newrelic", "lazy_static"]
+
 [dependencies]
 actix-web = "2.0"
 actix-rt = "1.0"
@@ -15,4 +19,5 @@ handlebars = { version = "3.4", features = ["dir_source"] }
 serde = { version = "1.0", "features" = ["derive"] }
 sqlx = { version = "0.4.0-beta.1", default-features = false, features = ["runtime-tokio", "mysql", "macros"]}
 futures = "0.3"
-newrelic = "0.2"
+newrelic = { version = "0.2", optional = true }
+lazy_static = { version = "1.4", optional = true }

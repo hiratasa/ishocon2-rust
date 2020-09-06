@@ -1,67 +1,105 @@
-use std::env;
+#[cfg(feature = "use_newrelic")]
+#[macro_use]
+pub mod detail {
+    use lazy_static::lazy_static;
+    use newrelic::{App, Transaction};
+    use std::env;
 
-use newrelic::{App, Transaction};
+    const APP_NAME: &str = "ishocon2-rust-hiratasa";
 
-const APP_NAME: &str = "ishocon2-rust-hiratasa";
-
-pub struct NewRelicAppData {
-    app: Option<App>,
-}
-
-impl NewRelicAppData {
-    fn new() -> NewRelicAppData {
-        NewRelicAppData { app: None }
+    lazy_static! {
+        pub static ref APP: NewRelicAppData = NewRelicAppData::new();
     }
 
-    fn new_with_key(key: &str) -> NewRelicAppData {
-        let app = App::new(APP_NAME, key).expect("Could not create app.");
-        NewRelicAppData { app: Some(app) }
+    // For handy access to global instance outside this module.
+    #[allow(unused_macros)]
+    macro_rules! newrelic_app {
+        () => {
+            crate::newrelic_util::detail::APP
+        };
     }
 
-    pub fn transaction(&self, name: &str) -> Option<Transaction> {
-        self.app.as_ref().map(|app| {
-            app.web_transaction(name)
-                .expect("Could not start transaction")
-        })
+    #[allow(unused_macros)]
+    macro_rules! newrelic_init {
+        () => {
+            lazy_static::initialize(&newrelic_app!());
+        };
     }
-}
 
-pub fn create_app() -> NewRelicAppData {
-    let license_key = match env::var("NEW_RELIC_LICENSE_KEY") {
-        Ok(key) => key,
-        Err(e) => {
-            eprintln!("{}", e);
-            return NewRelicAppData::new();
+    #[allow(unused_macros)]
+    macro_rules! newrelic_transaction {
+        ($name:expr) => {
+            let _transaction = newrelic_app!().transaction($name);
+        };
+    }
+
+    pub struct NewRelicAppData {
+        app: Option<App>,
+    }
+
+    impl NewRelicAppData {
+        pub fn new() -> NewRelicAppData {
+            match env::var("NEW_RELIC_LICENSE_KEY") {
+                Ok(key) => {
+                    let app = App::new(APP_NAME, &key).expect("Could not create app.");
+                    NewRelicAppData { app: Some(app) }
+                }
+                Err(e) => {
+                    eprintln!("{}", e);
+                    NewRelicAppData { app: None }
+                }
+            }
         }
-    };
-    NewRelicAppData::new_with_key(&license_key)
+
+        pub fn transaction(&self, name: &str) -> Option<Transaction> {
+            self.app.as_ref().map(|app| {
+                app.web_transaction(name)
+                    .expect("Could not start transaction")
+            })
+        }
+    }
+
+    mod actix_web {
+        use actix_service::*;
+        use actix_web::dev::*;
+        use actix_web::Error;
+        use core::future::Future;
+        use futures::FutureExt;
+
+        use super::NewRelicAppData;
+
+        // Use with App::wrap_fn
+        #[allow(dead_code)]
+        fn wrap_log_transaction<S, Res>(
+            req: ServiceRequest,
+            srv: &mut S,
+        ) -> impl Future<Output = Result<Res, Error>>
+        where
+            S: Service<Request = ServiceRequest, Response = Res, Error = Error>,
+        {
+            let newrelic: &NewRelicAppData = &req.app_data().unwrap();
+
+            let transaction = newrelic.transaction(&(req.method().to_string() + req.path()));
+
+            srv.call(req).map(|res| {
+                // take ownership
+                let _transaction = transaction;
+                res
+            })
+        }
+    }
 }
 
-pub mod actix_web {
-    use actix_service::*;
-    use actix_web::dev::*;
-    use actix_web::Error;
-    use core::future::Future;
-    use futures::FutureExt;
+#[cfg(not(feature = "use_newrelic"))]
+#[macro_use]
+mod detail {
+    #[allow(unused_macros)]
+    macro_rules! newrelic_init {
+        () => {};
+    }
 
-    use super::NewRelicAppData;
-
-    // Use with App::wrap_fn
-    pub fn wrap_log_transaction<S, Res>(
-        req: ServiceRequest,
-        srv: &mut S,
-    ) -> impl Future<Output = Result<Res, Error>>
-    where
-        S: Service<Request = ServiceRequest, Response = Res, Error = Error>,
-    {
-        let newrelic: &NewRelicAppData = &req.app_data().unwrap();
-
-        let transaction = newrelic.transaction(&(req.method().to_string() + req.path()));
-
-        srv.call(req).map(|res| {
-            // take ownership
-            let _transaction = transaction;
-            res
-        })
+    #[allow(unused_macros)]
+    macro_rules! newrelic_transaction {
+        ($($_:expr),*) => {};
     }
 }
