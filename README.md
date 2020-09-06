@@ -11,8 +11,8 @@ goの参照実装をベースに、できるだけ処理フローを変えない
 そのため、ビルドするには以下二点が必要:
 
 * DBに実環境同等のテーブルがあること
-   * ローカルでの開発時は、ISHOCON2のリポジトリの[init.sql](https://github.com/showwin/ISHOCON2/blob/master/admin/init.sql)もしくは[DBのdump](https://github.com/showwin/ISHOCON2/blob/master/admin/ishocon2.dump.tar.bz2)を使つ
-* DBのURLが`.env`ファイルに以下のような形で記入されていること:
+   * ローカルでの開発時は、ISHOCON2のリポジトリの[init.sql](https://github.com/showwin/ISHOCON2/blob/master/admin/init.sql)もしくは[DBのdump](https://github.com/showwin/ISHOCON2/blob/master/admin/ishocon2.dump.tar.bz2)を使うとよい
+* コンパイル時に接続するDBのURLが`.env`ファイルに以下のような形で記入されていること(コンパイル時に接続するDBのURLであり、サーバ起動時に接続するDBのURLとは別):
     ```
     DATABASE_URL=mysql://ishocon:ishocon@localhost/ishocon2
     ```
