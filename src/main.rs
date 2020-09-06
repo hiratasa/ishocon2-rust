@@ -1,5 +1,6 @@
 mod candidate;
 mod helpers;
+mod newrelic_util;
 mod user;
 mod vote;
 
@@ -246,10 +247,14 @@ async fn main() -> std::io::Result<()> {
     hb.register_helper("plus1", Box::new(helpers::plus1));
     let hb = web::Data::new(hb);
 
+    let newrelic = web::Data::new(newrelic_util::create_app());
+
     HttpServer::new(move || {
         App::new()
             .app_data(pool.clone())
             .app_data(hb.clone())
+            .app_data(newrelic.clone())
+            .wrap_fn(newrelic_util::actix_web::log_transaction)
             .service(Files::new("/css", "./public/css"))
             .route("/", web::get().to(index))
             .route("/candidates/{id}", web::get().to(show_candidate))
